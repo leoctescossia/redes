@@ -16,35 +16,41 @@ class FileReceiverProtocol(QuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.received_data = b''  # Buffer para dados recebidos
+        self.file_count = 0       # Contador de arquivos recebidos
 
     def quic_event_received(self, event):
         if isinstance(event, StreamDataReceived):
-            logging.info(f"Recebendo dados: {len(event.data)} bytes")
-            self.received_data += event.data  # Adiciona os dados recebidos ao buffer
-
-            # Quando o stream termina, salvamos os dados em um arquivo
-            if event.end_stream:
+            logging.info(f"Dados recebidos no stream {event.stream_id}: {len(event.data)} bytes.")
+            self.received_data += event.data  # Adiciona os dados ao buffer
+            
+            if event.end_stream:  # O stream foi encerrado
                 self.save_received_file()
 
         elif isinstance(event, ConnectionTerminated):
             logging.info("Conexão QUIC terminada")
 
+
     def save_received_file(self):
-        with open('received_file', 'wb') as f:
-            f.write(self.received_data)
-        logging.info("Arquivo recebido e salvo como 'received_file'.")
+        if self.received_data:
+            with open('received_file', 'wb') as f:
+                f.write(self.received_data)
+            logging.info("Arquivo recebido e salvo como 'received_file'.")
+        else:
+            logging.warning("Nenhum dado recebido para salvar.")
+
+
+        
 
 async def serve_quic():
     config = create_quic_configuration()
 
     try:
-        # Criando o servidor QUIC com a classe de protocolo FileReceiverProtocol
         server = await serve(
             '127.0.0.1', 4433, configuration=config, create_protocol=FileReceiverProtocol
         )
         logging.info("Servidor QUIC iniciado em 127.0.0.1:4433")
 
-        # Mantém o servidor ativo indefinidamente
+        # Mantém o servidor ativo
         await asyncio.Event().wait()
     except Exception as e:
         logging.error(f"Erro ao iniciar o servidor QUIC: {e}")
