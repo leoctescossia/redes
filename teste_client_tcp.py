@@ -22,5 +22,5 @@ def send_file_via_tcp(file_path):
 
 if __name__ == "__main__":
     #TODO indicar qual arquivo será enviado
-    #file_path = "sample_1mb.txt"  # Caminho do arquivo para enviar
+    file_path = "sample_1mb.txt"  # Caminho do arquivo para enviar
     send_file_via_tcp(file_path)
